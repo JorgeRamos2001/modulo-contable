@@ -15,4 +15,6 @@ public interface CuentaRepository extends JpaRepository<Cuenta, Long> {
     List<Cuenta> findByCuentaPadreId(Long cuentaPadreId);
 
     List<Cuenta> findByNivelOrderByCodigoAsc(Integer nivel);
+
+    List<Cuenta> findAllByOrderByCodigoAsc();
 }
