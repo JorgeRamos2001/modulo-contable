@@ -14,10 +14,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class AsientoService {
+
+    private static final String TIPO_ACTIVO = "1";
+    private static final String TIPO_PATRIMONIO = "3";
 
     private final AsientoRepository asientoRepository;
     private final CuentaRepository cuentaRepository;
@@ -32,22 +37,23 @@ public class AsientoService {
     public Asiento crearAsiento(AsientoRequestDTO request) {
         validarPartidaDoble(request);
 
+        boolean esPrimerAsiento = asientoRepository.count() == 0;
+
+        List<Cuenta> cuentasResueltas = resolverYValidarCuentas(request);
+
+        if (esPrimerAsiento) {
+            validarAsientoDeConstitucion(request, cuentasResueltas);
+        }
+
         Asiento asiento = Asiento.builder()
                 .numeroAsiento(siguienteNumeroAsiento())
                 .fecha(request.fecha())
                 .concepto(request.concepto())
                 .build();
 
-        for (DetalleAsientoRequestDTO detalleDto : request.detalles()) {
-            Cuenta cuenta = cuentaRepository.findById(detalleDto.cuentaId())
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            "Cuenta no encontrada: id=" + detalleDto.cuentaId()));
-
-            if (!Integer.valueOf(4).equals(cuenta.getNivel())) {
-                throw new IllegalArgumentException(
-                        "No se puede contabilizar contra '%s - %s' porque no es una subcuenta (nivel hoja). Usa una cuenta de 6 digitos."
-                                .formatted(cuenta.getCodigo(), cuenta.getNombre()));
-            }
+        for (int i = 0; i < request.detalles().size(); i++) {
+            DetalleAsientoRequestDTO detalleDto = request.detalles().get(i);
+            Cuenta cuenta = cuentasResueltas.get(i);
 
             DetalleAsiento detalle = DetalleAsiento.builder()
                     .cuenta(cuenta)
@@ -62,6 +68,48 @@ public class AsientoService {
         Asiento guardado = asientoRepository.save(asiento);
         mayorizacionService.actualizarSaldos(guardado.getDetalles());
         return guardado;
+    }
+
+    /** Busca cada cuenta referenciada y valida que sea subcuenta (nivel hoja). */
+    private List<Cuenta> resolverYValidarCuentas(AsientoRequestDTO request) {
+        List<Cuenta> cuentas = new ArrayList<>();
+        for (DetalleAsientoRequestDTO detalleDto : request.detalles()) {
+            Cuenta cuenta = cuentaRepository.findById(detalleDto.cuentaId())
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Cuenta no encontrada: id=" + detalleDto.cuentaId()));
+
+            if (!Integer.valueOf(4).equals(cuenta.getNivel())) {
+                throw new IllegalArgumentException(
+                        "No se puede contabilizar contra '%s - %s' porque no es una subcuenta (nivel hoja). Usa una cuenta de 6 digitos."
+                                .formatted(cuenta.getCodigo(), cuenta.getNombre()));
+            }
+            cuentas.add(cuenta);
+        }
+        return cuentas;
+    }
+
+    /**
+     * El primer asiento del sistema debe ser la constitucion de la empresa:
+     * los aportes de los socios (Debe = cuentas de Activo: caja, bancos, vehiculos,
+     * inventario, etc.) contra el Capital Social (Haber = cuentas de Patrimonio).
+     */
+    private void validarAsientoDeConstitucion(AsientoRequestDTO request, List<Cuenta> cuentasResueltas) {
+        for (int i = 0; i < request.detalles().size(); i++) {
+            DetalleAsientoRequestDTO detalleDto = request.detalles().get(i);
+            Cuenta cuenta = cuentasResueltas.get(i);
+            boolean esDebe = detalleDto.debe().compareTo(BigDecimal.ZERO) > 0;
+
+            if (esDebe && !TIPO_ACTIVO.equals(cuenta.getTipoCuenta())) {
+                throw new IllegalArgumentException(
+                        "El primer asiento debe ser la constitucion de la empresa: en el Debe solo se permiten cuentas de Activo (aportes de los socios). '%s - %s' no es una cuenta de Activo."
+                                .formatted(cuenta.getCodigo(), cuenta.getNombre()));
+            }
+            if (!esDebe && !TIPO_PATRIMONIO.equals(cuenta.getTipoCuenta())) {
+                throw new IllegalArgumentException(
+                        "El primer asiento debe ser la constitucion de la empresa: en el Haber solo se permiten cuentas de Patrimonio (Capital Social). '%s - %s' no es una cuenta de Patrimonio."
+                                .formatted(cuenta.getCodigo(), cuenta.getNombre()));
+            }
+        }
     }
 
     private void validarPartidaDoble(AsientoRequestDTO request) {
