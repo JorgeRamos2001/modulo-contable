@@ -52,4 +52,14 @@ public class Cuenta {
     public boolean esNaturalezaDeudora() {
         return "1".equals(tipoCuenta) || "4".equals(tipoCuenta);
     }
+
+    /**
+     * Convierte un movimiento Debe/Haber en su efecto neto sobre el saldo,
+     * respetando la naturaleza de la cuenta. Reutilizado por MayorizacionService
+     * (saldo en tiempo real) y ReporteService (reconstruccion del Libro Mayor).
+     */
+    @Transient
+    public BigDecimal calcularMovimientoNeto(BigDecimal debe, BigDecimal haber) {
+        return esNaturalezaDeudora() ? debe.subtract(haber) : haber.subtract(debe);
+    }
 }

@@ -43,6 +43,12 @@ public class AsientoService {
                     .orElseThrow(() -> new EntityNotFoundException(
                             "Cuenta no encontrada: id=" + detalleDto.cuentaId()));
 
+            if (!Integer.valueOf(4).equals(cuenta.getNivel())) {
+                throw new IllegalArgumentException(
+                        "No se puede contabilizar contra '%s - %s' porque no es una subcuenta (nivel hoja). Usa una cuenta de 6 digitos."
+                                .formatted(cuenta.getCodigo(), cuenta.getNombre()));
+            }
+
             DetalleAsiento detalle = DetalleAsiento.builder()
                     .cuenta(cuenta)
                     .concepto(detalleDto.concepto())
