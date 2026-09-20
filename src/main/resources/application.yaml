@@ -1,6 +1,7 @@
 spring:
   application:
     name: modulo-contable
+
   config:
     import: optional:file:.env[.properties]
 
@@ -27,6 +28,10 @@ spring:
 
 server:
   port: 8080
+
+app:
+  empresa:
+    nombre: Mi Empresa, S.A. de C.V.
 
 springdoc:
   swagger-ui:

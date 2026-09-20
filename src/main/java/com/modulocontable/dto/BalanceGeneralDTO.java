@@ -1,16 +1,20 @@
 package com.modulocontable.dto;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.time.LocalDate;
 
 public record BalanceGeneralDTO(
-        List<CuentaSaldoDTO> activo,
-        List<CuentaSaldoDTO> pasivo,
-        List<CuentaSaldoDTO> patrimonio,
+        String nombreEmpresa,
+        LocalDate fechaCorte,
+        SeccionDTO activoCorriente,
+        SeccionDTO activoNoCorriente,
         BigDecimal totalActivo,
+        SeccionDTO pasivoCorriente,
+        SeccionDTO pasivoNoCorriente,
         BigDecimal totalPasivo,
-        BigDecimal totalPatrimonio,
-        /** true si Activo = Pasivo + Patrimonio */
+        SeccionDTO capitalContable,
+        BigDecimal totalPasivoYCapital,
+        /** true si Activo = Pasivo + Capital Contable */
         boolean cuadrado
 ) {
 }
