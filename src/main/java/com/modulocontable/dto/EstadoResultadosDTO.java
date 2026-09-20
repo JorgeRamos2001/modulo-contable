@@ -1,14 +1,36 @@
 package com.modulocontable.dto;
 
 import java.math.BigDecimal;
-import java.util.List;
 
+/**
+ * Estado de Resultados en formato cascada, como se enseña en Contabilidad 1:
+ * cada bloque calcula una utilidad parcial que alimenta al siguiente.
+ */
 public record EstadoResultadosDTO(
-        List<CuentaSaldoDTO> ingresos,
-        List<CuentaSaldoDTO> costosYGastos,
-        BigDecimal totalIngresos,
-        BigDecimal totalCostosYGastos,
-        /** ingresos - costosYGastos. Negativo significa perdida del periodo. */
-        BigDecimal utilidad
+        BigDecimal ventas,
+        BigDecimal devolucionesRebajasVentas,
+        BigDecimal ventasNetas,
+
+        BigDecimal costoVentas,
+        BigDecimal utilidadBruta,
+
+        BigDecimal gastosVenta,
+        BigDecimal gastosAdministracion,
+        BigDecimal totalGastosOperacion,
+        BigDecimal utilidadOperacional,
+
+        BigDecimal productosFinancieros,
+        BigDecimal gastosFinancieros,
+        BigDecimal utilidadFinanciera,
+
+        BigDecimal otrosProductos,
+        BigDecimal otrosGastos,
+        BigDecimal utilidadOtrosProductosYGastos,
+
+        /** utilidadFinanciera + utilidadOtrosProductosYGastos */
+        BigDecimal utilidadAjenaActividad,
+
+        /** utilidadOperacional + utilidadAjenaActividad */
+        BigDecimal utilidadAntesImpuestos
 ) {
 }
